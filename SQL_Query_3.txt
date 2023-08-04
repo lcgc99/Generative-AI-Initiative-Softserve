@@ -1,0 +1,59 @@
+
+Hey buddy. Now I have this request. Can you assist?
+"Write a SQL query to retrieve sales revenue and quantity contributions by customer, calculated as a percentage of total sales revenue and quantity for each quarter and year"
+The query is written in sql server.
+
+ChatGPT
+Sure, I'd be happy to help you out. Let's assume you have a table named "sales" with the following structure:
+
+customer_id: The ID of the customer
+sale_date: The date of the sale
+quantity: The quantity sold
+revenue: The revenue from the sale
+We'll calculate the total sales revenue and quantity for each quarter and year, then determine each customer's contribution to those totals.
+
+Here is the SQL query:
+
+sql
+Copy code
+WITH quarterly_sales AS (
+    SELECT 
+        customer_id, 
+        DATEPART(YEAR, sale_date) AS sale_year,
+        DATEPART(QUARTER, sale_date) AS sale_quarter,
+        SUM(quantity) AS customer_quantity,
+        SUM(revenue) AS customer_revenue
+    FROM 
+        sales
+    GROUP BY 
+        customer_id, 
+        DATEPART(YEAR, sale_date), 
+        DATEPART(QUARTER, sale_date)
+),
+total_quarterly_sales AS (
+    SELECT 
+        sale_year,
+        sale_quarter,
+        SUM(customer_quantity) AS total_quantity,
+        SUM(customer_revenue) AS total_revenue
+    FROM 
+        quarterly_sales
+    GROUP BY 
+        sale_year, 
+        sale_quarter
+)
+SELECT 
+    qs.customer_id, 
+    qs.sale_year, 
+    qs.sale_quarter, 
+    qs.customer_quantity,
+    qs.customer_revenue,
+    (qs.customer_quantity / NULLIF(tqs.total_quantity, 0)) * 100 AS quantity_contribution_pct,
+    (qs.customer_revenue / NULLIF(tqs.total_revenue, 0)) * 100 AS revenue_contribution_pct
+FROM 
+    quarterly_sales qs
+JOIN 
+    total_quarterly_sales tqs ON qs.sale_year = tqs.sale_year AND qs.sale_quarter = tqs.sale_quarter;
+This query will provide the customer_id, sale year, sale quarter, the customer's quantity sold and revenue generated during that period, and the customer's contribution as a percentage of total quantity and total revenue for the same period.
+
+The NULLIF function is used to prevent division by zero errors, if there are any quarters with no sales at all.
